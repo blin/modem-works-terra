@@ -18,61 +18,69 @@ Make sure the names of the files are consistent across all of the code files.
 
 */
 
-#include "checkpoint_1.h"     // Sketch tab header for xbm images
-#include "checkpoint_2.h"  // Sketch tab header for xbm images
+#include "checkpoint_1.h"    // Sketch tab header for xbm images
+#include "checkpoint_2.h"    // Sketch tab header for xbm images
 #include "checkpoint_3.h"    // Sketch tab header for xbm images
 #include "checkpoint_4.h"    // Sketch tab header for xbm images
 #include "checkpoint_5.h"    // Sketch tab header for xbm images
 
-#include <TFT_eSPI.h>  // Hardware-specific library
+#include "Adafruit_GC9A01A.h"
 
-int backlight = 12;
-int brightness = 0;  // how bright the LED is
-int fadeAmount = 5;  // how many points to fade the LED by
+#define TFT_DC 33
+#define TFT_CS 15
+#define TFT_BL 12
 
-#define logoWidth 240   // logo width
-#define logoHeight 240  // logo height
+#define logoWidth  240
+#define logoHeight 240
 
-TFT_eSPI tft = TFT_eSPI();  // Invoke library
+// NOTE: the images are "inverted", so the whole screen is filled
+// with FG_COLOR, and then the "inverted" image is drawn with BG_COLOR.
+// tft.fillScreen(FG_COLOR);
+// tft.drawXBitmap(x, y, checkpoint_4, logoWidth, logoHeight, BG_COLOR);
+#define BG_COLOR GC9A01A_BLACK
+#define FG_COLOR GC9A01A_WHITE
+
+Adafruit_GC9A01A tft(TFT_CS, TFT_DC);
+
 
 // Set X and Y coordinates where the image will be drawn
 int x = 0;
 int y = 0;
 
 void setup() {
-  pinMode(backlight, OUTPUT);
-  tft.begin();                // Initialise the display
-  tft.fillScreen(TFT_BLACK);  // Black screen fill
+  pinMode(TFT_BL, OUTPUT);
+  tft.begin();
+  tft.fillScreen(FG_COLOR);
 }
 
 void loop() {
   fadeOut();
-  tft.fillScreen(TFT_BLACK);  // Black screen fill
-  tft.drawXBitmap(x, y, checkpoint_1, logoWidth, logoHeight, TFT_BLACK, TFT_WHITE);
+  tft.fillScreen(FG_COLOR);
+  tft.drawXBitmap(x, y, checkpoint_1, logoWidth, logoHeight, BG_COLOR);
   delay(100);
   fadeIn();
 
   delay(1000);
 
   fadeOut();
-  tft.fillScreen(TFT_BLACK);  // Black screen fill
-  tft.drawXBitmap(x, y, checkpoint_2, logoWidth, logoHeight, TFT_BLACK, TFT_WHITE);
+  tft.fillScreen(FG_COLOR);
+  tft.drawXBitmap(x, y, checkpoint_2, logoWidth, logoHeight, BG_COLOR);
   delay(100);
   fadeIn();
 
   delay(1000);
 
   fadeOut();
-  tft.fillScreen(TFT_BLACK);  // Black screen fill
-  tft.drawXBitmap(x, y, checkpoint_3, logoWidth, logoHeight, TFT_BLACK, TFT_WHITE);
+  tft.fillScreen(FG_COLOR);
+  tft.drawXBitmap(x, y, checkpoint_3, logoWidth, logoHeight, BG_COLOR);
   delay(100);
   fadeIn();
 
   delay(1000);
 
   fadeOut();
-  tft.fillScreen(TFT_BLACK);  // Black screen fill
-  tft.drawXBitmap(x, y, checkpoint_4, logoWidth, logoHeight, TFT_BLACK, TFT_WHITE);
+  tft.fillScreen(FG_COLOR);
+  tft.drawXBitmap(x, y, checkpoint_4, logoWidth, logoHeight, BG_COLOR);
   delay(100);
   fadeIn();
 
@@ -83,7 +91,7 @@ void fadeOut() {
   // fade out from max to min in increments of 5 points:
   for (int fadeValue = 255; fadeValue >= 0; fadeValue -= 5) {
     // sets the value (range from 0 to 255):
-    analogWrite(backlight, fadeValue);
+    analogWrite(TFT_BL, fadeValue);
     // wait for 30 milliseconds to see the dimming effect
     delay(10);
   }
@@ -93,7 +101,7 @@ void fadeIn(){
   // fade in from min to max in increments of 5 points:
   for (int fadeValue = 0; fadeValue <= 255; fadeValue += 5) {
     // sets the value (range from 0 to 255):
-    analogWrite(backlight, fadeValue);
+    analogWrite(TFT_BL, fadeValue);
     // wait for 30 milliseconds to see the dimming effect
     delay(10);
   }
