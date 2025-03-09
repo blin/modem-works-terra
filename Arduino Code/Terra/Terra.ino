@@ -1,10 +1,9 @@
 // Latest working code as of March 26 2024.
 
-bool debugMode = true;
+bool debugMode = false;
 
 // Include Libraries
 #include <TinyGPSPlus.h>
-#include <TFT_eSPI.h>
 #include <Wire.h>
 #include <map>
 #include "Adafruit_DRV2605.h"
@@ -22,9 +21,25 @@ unsigned int angle16;
 #define BACKLIGHT_PIN 12
 
 // TFT Display Settings
+#include "Adafruit_GC9A01A.h"
+
+#define GC9A01A_DC 33
+#define GC9A01A_CS 15
+#define GC9A01A_BL 12
+
+#define logoWidth  240
+#define logoHeight 240
+
+// NOTE: the images are "inverted", so the whole screen is filled
+// with FG_COLOR, and then the "inverted" image is drawn with BG_COLOR.
+// tft.fillScreen(FG_COLOR);
+// tft.drawXBitmap(x, y, checkpoint_4, logoWidth, logoHeight, BG_COLOR);
+#define BG_COLOR GC9A01A_BLACK
+#define FG_COLOR GC9A01A_WHITE
 #define logoWidth 240
 #define logoHeight 240
-TFT_eSPI tft = TFT_eSPI();
+
+Adafruit_GC9A01A tft(GC9A01A_CS, GC9A01A_DC);
 
 // The TinyGPSPlus object
 TinyGPSPlus gps;
@@ -44,7 +59,7 @@ int proximityVibrationDelayMs = 500;   // To determine the time between vibratio
 // Image Types Enum
 enum ImageType {
   NONE,
-  PENDING,
+  MY_PENDING,
   GOTOSTART,
   ARROW_N,
   ARROW_NNE,
@@ -116,11 +131,12 @@ void setup() {
   Serial.begin(115200);
 
   if (!debugMode) {
+    // 9600 is the default baud rate for the BN800 GPS
     Serial1.begin(9600);
   }
 
   // Screen
-  tft.init();
+  tft.begin();
   tft.setRotation(1);
   pinMode(BACKLIGHT_PIN, OUTPUT);
   digitalWrite(BACKLIGHT_PIN, LOW);
@@ -178,6 +194,9 @@ void handleGPSData() {
       if (readGPS()) {
         dataReceived = true;
       }
+      // smart delay not only delays, but also processes data from
+      // the GPS device over the serial port...
+      smartDelay(1000);
     }
   }
 }
@@ -203,8 +222,12 @@ bool readGPS() {
   if (gps.location.isValid()) {
     currentLat = gps.location.lat();
     currentLon = gps.location.lng();
+    Serial.printf("lat=%f,lon=%f\n", currentLat, currentLon);
+
     return true;
   }
+  Serial.println("GPS location is invalid!");
+
   return false;
 }
 
@@ -226,7 +249,7 @@ void determineTrailStatusAndNavigate() {
 
   if (navigationState == NOT_STARTED) {
     if (!dataReceived) {
-      displayImage(PENDING);  // Show PENDING only when waiting for the first GPS data
+      displayImage(MY_PENDING);  // Show MY_PENDING only when waiting for the first GPS data
     } else {
       Serial.println("Please proceed to the start of the trail.");
       displayImage(GOTOSTART);  // Now we're sure we've received data, show GOTOSTART
@@ -277,8 +300,8 @@ void determineTrailStatusAndNavigate() {
         // Check if this is the final stop
         if (currentStop == numberOfStops) {
           Serial.println("Final stop reached. Trail is complete.");
-          // Display PENDING image to indicate completion
-          displayImage(PENDING);
+          // Display MY_PENDING image to indicate completion
+          displayImage(MY_PENDING);
           // Optionally, you might want to change the navigation state or take other actions here
           navigationState = TRAIL_ENDED;  // Resetting the state to NOT_STARTED or another appropriate state
         }
@@ -339,9 +362,9 @@ void displayImage(ImageType image) {
     if (screenOn) {
       fadeOut();
     }
-    tft.fillScreen(TFT_BLACK);  // This line is common to all cases
+    tft.fillScreen(FG_COLOR);
     switch (image) {
-      case PENDING:
+      case MY_PENDING:
         drawBitmap(pending);
         Serial.println("Drawn pending.h");
         break;
@@ -454,7 +477,7 @@ void displayImage(ImageType image) {
         Serial.println("Drawn checkpoint_10.h");
         break;
       default:
-        tft.fillScreen(TFT_BLACK);
+        tft.fillScreen(FG_COLOR);
         Serial.println("No image to display");
     }
     fadeIn();
@@ -463,7 +486,7 @@ void displayImage(ImageType image) {
 }
 
 void drawBitmap(const unsigned char* bitmap) {
-  tft.drawXBitmap(0, 0, bitmap, logoWidth, logoHeight, TFT_BLACK, TFT_WHITE);
+  tft.drawXBitmap(0, 0, bitmap, logoWidth, logoHeight, BG_COLOR);
 }
 
 // Example function to calculate relative direction based on angles
