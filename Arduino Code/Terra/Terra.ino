@@ -158,6 +158,9 @@ void setup() {
 
 // Main Loop
 void loop() {
+  Serial.println("loop start");
+
+  delay(1000);
   if (nonBlockingDelay(1000)) {
     handleGPSData();
     determineTrailStatusAndNavigate();
@@ -179,6 +182,7 @@ static void smartDelay(unsigned long ms) {
     while (Serial1.available())
       gps.encode(Serial1.read());
   } while (millis() - start < ms);
+  Serial.printf("gps sat=%d,sentencesWithFix=%d\n", gps.satellites.value(), gps.sentencesWithFix());
 }
 
 // Handle GPS Data
@@ -196,7 +200,7 @@ void handleGPSData() {
       }
       // smart delay not only delays, but also processes data from
       // the GPS device over the serial port...
-      smartDelay(1000);
+      smartDelay(5000);
     }
   }
 }
