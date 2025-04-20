@@ -2,6 +2,7 @@
 
 // Vibration motor object declaration moved to Terra.ino
 // Vibration state variables moved to Terra.ino
+int effectNumber = 58;
 
 // Trigger vibration based on proximity rules
 void triggerProximityVibration() {

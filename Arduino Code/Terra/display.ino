@@ -30,6 +30,11 @@
 #include "images/checkpoints/checkpoint_9.h"
 #include "images/checkpoints/checkpoint_10.h"
 
+#define logoWidth  240
+#define logoHeight 240
+#define BG_COLOR GC9A01A_BLACK
+#define FG_COLOR GC9A01A_WHITE
+ImageType currentDisplayedImage = NONE; // Tracks the currently displayed image
 
 // Display image function - fades images out then in again
 void displayImage(ImageType image) {
@@ -166,7 +171,7 @@ void drawBitmap(const unsigned char* bitmap) {
 
 void fadeOut() {
   for (int i = 255; i >= 0; i -= 5) {
-    analogWrite(BACKLIGHT_PIN, i);
+    analogWrite(GC9A01A_BL, i);
     delay(10);
   }
   screenOn = false;
@@ -174,7 +179,7 @@ void fadeOut() {
 
 void fadeIn() {
   for (int i = 0; i <= 255; i += 5) {
-    analogWrite(BACKLIGHT_PIN, i);
+    analogWrite(GC9A01A_BL, i);
     delay(10);
   }
   screenOn = true;

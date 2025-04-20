@@ -1,4 +1,6 @@
 // compass.ino - Handles reading the CMPS12 compass sensor
+#define CMPS12_ADDRESS 0x60
+#define ANGLE_8 1
 
 // Variables used by readCompass
 unsigned char high_byte, low_byte, angle8;

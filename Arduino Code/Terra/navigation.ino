@@ -1,7 +1,18 @@
 // navigation.ino - Core navigation logic and state management
 
+// Thresholds for triggers in meters
+const int checkpointTrigger = 10;  // Distance from the checkpoint that is considered an arrival
+const int vibrationTrigger = 20;   // When to trigger vibration to indicate the checkpoint is getting close
+
+const double startLat = 51.536286769987;
+const double startLon = -0.12449799356353357;
+const double stopLats[] = { 51.536862, 51.537587, 51.53831, 51.538896, 51.539512, 51.540152, 51.540788, 51.541382, 51.541977, 51.542588, 51.536286769987 };
+const double stopLons[] = { -0.125599, -0.126087, -0.126477, -0.126926, -0.127397, -0.127758, -0.128196, -0.128654, -0.129082, -0.129531, -0.12449799356353357 };
+const int numberOfStops = 11;
+
 // Navigation State Enum moved to Terra.ino
 // Navigation state variables moved to Terra.ino
+unsigned long lastCheckpointTime = 0;           // Timestamp of when the last checkpoint was reached
 
 // Main navigation logic function
 void determineTrailStatusAndNavigate() {
