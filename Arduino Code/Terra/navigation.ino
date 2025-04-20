@@ -14,6 +14,13 @@ const int numberOfStops = 11;
 // Navigation state variables moved to Terra.ino
 unsigned long lastCheckpointTime = 0;           // Timestamp of when the last checkpoint was reached
 
+// --- State Handler Functions ---
+static void handleNotStartedState(double distance);
+static void handleNavigatingState(double distance, int relativeDirection);
+static void handleAtCheckpointState();
+static void handleTrailEndedState();
+// -----------------------------
+
 // Main navigation logic function
 void determineTrailStatusAndNavigate() {
   static double lastDistance = -1;
@@ -34,108 +41,136 @@ void determineTrailStatusAndNavigate() {
   // Calculate the relative direction for navigation
   int relativeDirection = calculateRelativeDirection(currentAngle, targetAngle);
 
-  // --- State Machine ---
-  if (navigationState == NOT_STARTED) {
-    if (!dataReceived) { // Check global dataReceived flag from Terra.ino
-      displayImage(MY_PENDING);  // Show MY_PENDING only when waiting for the first GPS data
+  // --- State Machine Dispatch ---
+  switch (navigationState) {
+    case NOT_STARTED:
+      handleNotStartedState(distance);
+      break;
+    case NAVIGATING:
+      handleNavigatingState(distance, relativeDirection);
+      break;
+    case AT_CHECKPOINT:
+      handleAtCheckpointState();
+      break;
+    case TRAIL_ENDED:
+      handleTrailEndedState();
+      break;
+    default:
+      // Should not happen
+      Serial.println("Error: Unknown navigation state!");
+      break;
+  }
+}
+
+// --- State Handler Function Implementations ---
+
+// Handle state when the trail has not yet started
+static void handleNotStartedState(double distance) {
+  if (!dataReceived) { // Check global dataReceived flag from Terra.ino
+    displayImage(MY_PENDING);  // Show MY_PENDING only when waiting for the first GPS data
+  } else {
+    Serial.println("Please proceed to the start of the trail.");
+    displayImage(GOTOSTART);  // Now we're sure we've received data, show GOTOSTART
+  }
+
+  // Transition to navigating state once within close range to the start and data has been received
+  if (dataReceived && distance <= checkpointTrigger) { // Access checkpointTrigger from config.ino
+    trailStarted = true; // Update global trailStarted flag
+    currentStop = 1;     // Update global currentStop
+    Serial.println("Trail started. Heading to Stop 1.");
+    navigationState = NAVIGATING; // Change state
+    // No return needed here as the main function will loop again
+  }
+}
+
+// Handle state when actively navigating between checkpoints
+static void handleNavigatingState(double distance, int relativeDirection) {
+  static double lastDistance = -1; // Keep track of last printed distance
+
+  // Update navigation arrow
+  ImageType arrowImage = selectArrowImage(relativeDirection);
+  displayImage(arrowImage); // Call function from display.ino
+
+  // Check for arrival at the next checkpoint
+  if (distance <= checkpointTrigger && currentStop <= numberOfStops) { // Access numberOfStops from config.ino
+    // Just arrived at this checkpoint
+    Serial.print("Arrived at Stop ");
+    Serial.println(currentStop);
+    ImageType checkpointImage = static_cast<ImageType>(CHECKPOINT_1 + currentStop - 1); // Use enum from images.ino
+    displayImage(checkpointImage);    // Show the checkpoint image
+    navigationState = AT_CHECKPOINT;  // Update state to at checkpoint
+    lastCheckpointTime = millis();    // Capture the time we arrived at the checkpoint
+    proximityVibrationTriggered = false;  // Stop proximity vibration - Access flag from vibration.ino
+
+    // Check if this is the final stop
+    if (currentStop == numberOfStops) {
+      Serial.println("Final stop reached. Trail is complete.");
+      // Display is handled by AT_CHECKPOINT state or TRAIL_ENDED state? Let's keep MY_PENDING for TRAIL_ENDED.
+      navigationState = TRAIL_ENDED; // Set final state immediately if last stop
+    }
+    // Don't increment currentStop here, it happens after the AT_CHECKPOINT delay
+    return; // Exit this handler as state has changed
+  }
+
+  // Continue navigating towards the currentStop
+  // Print distance update if changed significantly
+  if (abs(lastDistance - distance) > 0.5) { // Print if distance changes by > 0.5m
+    Serial.print("Distance to next stop ("); Serial.print(currentStop); Serial.print("): ");
+    Serial.print(distance, 1);  // One decimal place for distance
+    Serial.print(" m. Relative Direction: "); Serial.print(relativeDirection); Serial.println(" deg.");
+    lastDistance = distance;  // Update lastDistance for next comparison
+
+    // Set the flag to start continuous vibration when within vibrationTrigger distance
+    if (distance <= vibrationTrigger && !proximityVibrationTriggered) { // Access vibrationTrigger from config.ino
+      Serial.println("Vibration proximity triggered.");
+      proximityVibrationTriggered = true; // Access flag from vibration.ino
+      lastVibrationTime = millis();  // Ensure we start timing from now - Access var from vibration.ino
+      triggerProximityVibration(); // Trigger first vibration immediately - Call func from vibration.ino
+    } else if (distance > vibrationTrigger && proximityVibrationTriggered) {
+      Serial.println("Exited vibration proximity.");
+      proximityVibrationTriggered = false; // Stop vibration if moved away
+    }
+  }
+}
+
+// Handle state when currently at a checkpoint (displaying checkpoint info, waiting)
+static void handleAtCheckpointState() {
+  static double lastDistance = -1; // Reset lastDistance when leaving checkpoint
+
+  // Stay at checkpoint for 5 seconds
+  if (millis() - lastCheckpointTime > 5000) {
+    if (currentStop < numberOfStops) { // Check if there are more stops
+      currentStop++; // Prepare for the next stop
+      Serial.print("Proceeding to Stop "); Serial.println(currentStop);
+      navigationState = NAVIGATING;              // Transition back to navigating after the delay
+      proximityVibrationTriggered = false;       // Reset vibration trigger flag for next leg
+      lastDistance = -1; // Force distance update print on next NAVIGATING cycle
     } else {
-      Serial.println("Please proceed to the start of the trail.");
-      displayImage(GOTOSTART);  // Now we're sure we've received data, show GOTOSTART
-    }
-
-    // Transition to navigating state once within close range to the start and data has been received
-    if (dataReceived && distance <= checkpointTrigger) { // Access checkpointTrigger from config.ino
-      trailStarted = true; // Update global trailStarted flag
-      currentStop = 1;     // Update global currentStop
-      Serial.println("Trail started. Heading to Stop 1.");
-      navigationState = NAVIGATING; // Change state
-    }
-    return;  // Skip rest of the function logic when NOT_STARTED
-  }
-
-  // Only update navigation arrow if we are in the navigating phase
-  if (navigationState == NAVIGATING) {
-    ImageType arrowImage = selectArrowImage(relativeDirection);
-    displayImage(arrowImage); // Call function from display.ino
-  }
-
-  // Start of the trail logic (already handled by NOT_STARTED state transition)
-  // This block seems redundant with the NOT_STARTED logic above and might be removable
-  /*
-  if (!trailStarted) {
-      // ... (This logic seems covered by the NOT_STARTED state)
-  }
-  */
-  // Navigating the trail
-  // else { // Assuming trailStarted is true if not NOT_STARTED
-    if (distance <= checkpointTrigger && currentStop <= numberOfStops) { // Access numberOfStops from config.ino
-      if (navigationState != AT_CHECKPOINT) {
-        // Just arrived at this checkpoint
-        Serial.print("Arrived at Stop ");
-        Serial.println(currentStop);
-        ImageType checkpointImage = static_cast<ImageType>(CHECKPOINT_1 + currentStop - 1); // Use enum from images.ino
-        displayImage(checkpointImage);    // Show the checkpoint image
-        navigationState = AT_CHECKPOINT;  // Update state to at checkpoint
-        lastCheckpointTime = millis();    // Capture the time we arrived at the checkpoint
-
-        // Check if this is the final stop
-        if (currentStop == numberOfStops) {
-          Serial.println("Final stop reached. Trail is complete.");
-          displayImage(MY_PENDING); // Display completion image
-          navigationState = TRAIL_ENDED; // Set final state
-        } else {
-           // Only increment stop if not the final one, prepare for AT_CHECKPOINT delay
-        }
-
-        proximityVibrationTriggered = false;  // Stop proximity vibration - Access flag from vibration.ino
-        // currentStop++; // Increment happens after AT_CHECKPOINT delay
+      // We already reached the end, transition to TRAIL_ENDED state
+      // This case might already be covered by the arrival logic setting TRAIL_ENDED, but ensures state consistency
+      if (navigationState != TRAIL_ENDED) {
+          Serial.println("Checkpoint delay ended, trail finished.");
+          navigationState = TRAIL_ENDED; // Ensure state is TRAIL_ENDED
+          displayImage(MY_PENDING); // Display completion image now
       }
-    } else if (navigationState == AT_CHECKPOINT) {
-      // Stay at checkpoint for 5 seconds
-      if (millis() - lastCheckpointTime > 5000) {
-          if (currentStop < numberOfStops) { // Check if there are more stops
-              currentStop++; // Prepare for the next stop
-              Serial.print("Proceeding to Stop "); Serial.println(currentStop);
-              navigationState = NAVIGATING;              // Transition back to navigating after the delay
-              proximityVibrationTriggered = false;       // Reset vibration trigger flag for next leg
-              lastDistance = -1; // Force distance update print
-          } else {
-              // We already reached the end, stay in AT_CHECKPOINT or TRAIL_ENDED state
-              // This case might already be covered by the arrival logic setting TRAIL_ENDED
-              if (navigationState != TRAIL_ENDED) {
-                  Serial.println("Checkpoint delay ended, trail finished.");
-                  navigationState = TRAIL_ENDED; // Ensure state is TRAIL_ENDED
-              }
-          }
-      }
-    } else if (navigationState == NAVIGATING && currentStop <= numberOfStops) {
-      // Continue navigating towards the currentStop
-      // Print distance update if changed significantly
-      if (abs(lastDistance - distance) > 0.5) { // Print if distance changes by > 0.5m
-        Serial.print("Distance to next stop ("); Serial.print(currentStop); Serial.print("): ");
-        Serial.print(distance, 1);  // One decimal place for distance
-        Serial.print(" m. Relative Direction: "); Serial.print(relativeDirection); Serial.println(" deg.");
-        // Serial.print(" meters. Direction to next stop: "); Serial.print(cardinal); // Cardinal not displayed
-        // Serial.print(" (Target angle: "); Serial.print(targetAngle); Serial.println(" degrees)");
-        lastDistance = distance;  // Update lastDistance for next comparison
-
-        // Arrow is updated at the start of NAVIGATING state block
-
-        // Set the flag to start continuous vibration when within vibrationTrigger distance
-        if (distance <= vibrationTrigger && !proximityVibrationTriggered) { // Access vibrationTrigger from config.ino
-          Serial.println("Vibration proximity triggered.");
-          proximityVibrationTriggered = true; // Access flag from vibration.ino
-          lastVibrationTime = millis();  // Ensure we start timing from now - Access var from vibration.ino
-          triggerProximityVibration(); // Trigger first vibration immediately - Call func from vibration.ino
-        } else if (distance > vibrationTrigger && proximityVibrationTriggered) {
-            Serial.println("Exited vibration proximity.");
-            proximityVibrationTriggered = false; // Stop vibration if moved away
-        }
-      }
-    } else if (navigationState == TRAIL_ENDED) {
-        // Do nothing further, trail is complete.
     }
-  // } // End of 'else' assuming trailStarted
+  }
+  // While waiting, keep displaying the checkpoint image (already done on entry)
+}
+
+// Handle state when the trail has ended
+static void handleTrailEndedState() {
+  // Trail is complete.
+  // Display final image (e.g., MY_PENDING or a dedicated 'Finished' image)
+  // This might already be set when transitioning to this state.
+  // Ensure it stays displayed.
+  displayImage(MY_PENDING); // Ensure completion image is shown
+
+  // Optionally, stop vibrations if they were somehow left active
+  if (proximityVibrationTriggered) {
+      proximityVibrationTriggered = false;
+  }
+  // No further navigation actions needed.
 }
 
 
