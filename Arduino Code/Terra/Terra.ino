@@ -86,11 +86,10 @@ void loop() {
     Serial.printf("gps sat=%d,sentencesWithFix=%d\n", gps.satellites.value(), gps.sentencesWithFix());
   }
 
-  char loc_buf[64];
-  char *temp = loc_buf;
-  sprintf(temp, "data from %d satellites", gps.satellites.value());
-  drawText(temp);
-  delay(10000);
+  // Update the screen with satellite count using the new drawText format
+  drawText("Satellites: %d", gps.satellites.value());
+  delay(10000); // Consider reducing or removing this long delay
+
   if (nonBlockingDelay(1000)) {
     determineTrailStatusAndNavigate();
   }

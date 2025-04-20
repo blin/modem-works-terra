@@ -185,11 +185,31 @@ void fadeIn() {
   screenOn = true;
 }
 
-void drawText(const char *text) {
+// Draws formatted text to the screen, passing arguments directly to tft.printf
+size_t drawText(const char *format, ...) {
   tft.fillScreen(GC9A01A_BLACK);
-
   tft.setCursor(10, 100);
   tft.setTextColor(GC9A01A_GREEN);
   tft.setTextSize(2);
-  tft.println(text);
+
+  // Use va_list to handle variable arguments and pass them to tft.printf
+  va_list args;
+  va_start(args, format);
+  // Call tft.printf - Note: Adafruit_GFX's printf implementation handles va_list internally.
+  // We need to use vprintf or similar if tft.printf doesn't directly accept va_list.
+  // Let's assume tft.printf can handle it directly or through its base Print class.
+  // Rechecking Adafruit_GFX: Print::printf does take '...', so we pass args directly.
+  // However, the standard way is to use a vprintf variant. Let's try passing directly first.
+  // If tft.printf doesn't directly support '...', we'd need an intermediate buffer and vsnprintf.
+  // size_t result = tft.printf(format, ...); // This syntax isn't quite right for passing va_list
+
+  // Correct approach: Use a buffer and vsnprintf, then print the buffer.
+  // Adafruit_GFX's Print::printf itself takes '...' but doesn't expose a vprintf variant easily.
+  // So, we format into a buffer first.
+  char buffer[128]; // Adjust size as needed
+  vsnprintf(buffer, sizeof(buffer), format, args);
+  va_end(args);
+
+  // Now print the formatted buffer using tft.print which returns size_t
+  return tft.print(buffer);
 }
