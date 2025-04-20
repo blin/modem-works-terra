@@ -82,8 +82,8 @@ void loop() {
 
   // Check if the location is known using the global gps object
   if (locationKnown(gps)) {
-    // Update global location variables using the global gps object
-    updateLocationGlobals(gps);
+    // Update location variables by passing them as references (read-write)
+    updateLocationGlobals(gps, currentLat, currentLon, dataReceived);
     Serial.printf("Location is known\nlat=%.3f\nlon=%.3f\n", currentLat, currentLon);
     drawText("Location is known\nlat=%.3f\nlon=%.3f\n", currentLat, currentLon);
   } else {

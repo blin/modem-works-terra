@@ -2,18 +2,35 @@
 
 // Checks if the GPS object has a valid location fix.
 bool locationKnown(TinyGPSPlus& gps) {
+  // gps.location is the object storing lat/lon data within TinyGPSPlus.
+  // .isValid() is a method of the location object that returns true if
+  // the library has successfully parsed valid location data from the GPS module.
   return gps.location.isValid();
 }
 
-// Updates global latitude and longitude variables if the location is known.
-// Note: Still relies on global currentLat, currentLon, dataReceived.
-// Consider passing these as references too for better encapsulation.
-void updateLocationGlobals(TinyGPSPlus& gps) {
-  if (locationKnown(gps)) { // Call the updated locationKnown
-    currentLat = gps.location.lat();
-    currentLon = gps.location.lng();
-    dataReceived = true; // Mark that we have received valid data
+/**
+ * @brief Updates latitude, longitude, and a data received flag based on the GPS object's state.
+ *        If the location is valid, the provided variables are updated with the current
+ *        latitude, longitude, and the received flag is set to true.
+ *
+ * @param gps A reference to the TinyGPSPlus object to read location data from.
+ * @param lat A reference (read-write) to the variable where the latitude should be stored.
+ * @param lon A reference (read-write) to the variable where the longitude should be stored.
+ * @param received A reference (read-write) to a boolean flag that will be set to true
+ *                 if valid data is received and the location is updated.
+ */
+void updateLocationGlobals(TinyGPSPlus& gps, double& lat, double& lon, bool& received) {
+  // Check if the GPS object has a valid location fix using the locationKnown function
+  if (locationKnown(gps)) {
+    // Update the passed-in variables (via references) with the new coordinates
+    lat = gps.location.lat();
+    lon = gps.location.lng();
+    // Set the received flag to true since we successfully updated lat and lon
+    received = true;
   }
+  // If locationKnown(gps) is false, the function does nothing, leaving lat, lon,
+  // and received unchanged. The caller is responsible for handling the case
+  // where location is not known or data wasn't updated.
 }
 
 // Reads data from Serial1 and feeds it to the TinyGPSPlus object for a specified duration.
