@@ -31,20 +31,13 @@ Adafruit_DRV2605 drv;
 // Image Types Enum moved to images.ino
 // enum definition removed as it's now in images.ino
 
-// Navigation State Enum moved to navigation.ino
-enum NavigationState {
-  NOT_STARTED,
-  NAVIGATING,
-  AT_CHECKPOINT,
-  TRAIL_ENDED
-};
-
-// Initialize your navigation state
-NavigationState navigationState = NOT_STARTED;  // Initial navigation state
-unsigned long lastCheckpointTime = 0;           // Timestamp of when the last checkpoint was reached
+// Navigation State Enum and variables moved to navigation.ino
+// enum NavigationState { ... }; // Moved
+// NavigationState navigationState = NOT_STARTED; // Moved
+// unsigned long lastCheckpointTime = 0; // Moved
 
 // Global Variables for GPS Data and State
-int currentStop = 0;
+int currentStop = 0; // Tracks the current target checkpoint index (1-based)
 double currentLat, currentLon;
 bool trailStarted = false;
 bool dataReceived = false;
@@ -129,115 +122,7 @@ void loop() {
 
 // GPS functions (handleGPSData, readSerialGPS, readGPS, smartDelay) moved to gps.ino
 
-// Navigation function moved to navigation.ino
-void determineTrailStatusAndNavigate() {
-  static double lastDistance = -1;
-
-  // Obtain the target coordinates based on the trail's current status
-  double targetLat = !trailStarted ? startLat : stopLats[currentStop - 1];
-  double targetLon = !trailStarted ? startLon : stopLons[currentStop - 1];
-
-  // Calculate the current distance and direction to the target
-  double distance = getDistanceTo(targetLat, targetLon);
-  String cardinal = getCardinalTo(targetLat, targetLon);
-  int targetAngle = getCourseTo(targetLat, targetLon);  // Assume implementation exists
-  int currentAngle = readCompass();
-
-  // Calculate the relative direction for navigation
-  int relativeDirection = calculateRelativeDirection(currentAngle, targetAngle);
-
-  if (navigationState == NOT_STARTED) {
-    if (!dataReceived) {
-      displayImage(MY_PENDING);  // Show MY_PENDING only when waiting for the first GPS data
-    } else {
-      Serial.println("Please proceed to the start of the trail.");
-      displayImage(GOTOSTART);  // Now we're sure we've received data, show GOTOSTART
-    }
-
-    // Transition to navigating state once within close range to the start and data has been received
-    if (dataReceived && distance <= checkpointTrigger) {
-      trailStarted = true;
-      currentStop = 1;
-      Serial.println("Trail started. Heading to Stop 1.");
-      navigationState = NAVIGATING;
-    }
-    return;  // Continue to skip rest of the function logic when NOT_STARTED
-  }
-
-  // Only update navigation arrow if we are in the navigating phase
-  if (navigationState == NAVIGATING) {
-    ImageType arrowImage = selectArrowImage(relativeDirection);
-    displayImage(arrowImage);
-  }
-
-  // Start of the trail
-  if (!trailStarted) {
-    if (distance <= checkpointTrigger) {  // "Closeness" threshold
-      trailStarted = true;
-      currentStop = 1;  // Moving towards the first checkpoint
-      Serial.println("Trail started. Heading to Stop 1.");
-      navigationState = NAVIGATING;
-    } else {
-      Serial.println("Please proceed to the start of the trail.");
-      if (dataReceived) {
-        displayImage(GOTOSTART);  // Indicating to go to the starting point
-      }
-    }
-  }
-  // Navigating the trail
-  else {
-    if (distance <= checkpointTrigger && currentStop <= numberOfStops) {
-      if (navigationState != AT_CHECKPOINT) {
-        // Just arrived at this checkpoint
-        Serial.print("Arrived at Stop ");
-        Serial.println(currentStop);
-        ImageType checkpointImage = static_cast<ImageType>(CHECKPOINT_1 + currentStop - 1);
-        displayImage(checkpointImage);    // Show the checkpoint image
-        navigationState = AT_CHECKPOINT;  // Update state to at checkpoint
-        lastCheckpointTime = millis();    // Capture the time we arrived at the checkpoint
-
-        // Check if this is the final stop
-        if (currentStop == numberOfStops) {
-          Serial.println("Final stop reached. Trail is complete.");
-          // Display MY_PENDING image to indicate completion
-          displayImage(MY_PENDING);
-          // Optionally, you might want to change the navigation state or take other actions here
-          navigationState = TRAIL_ENDED;  // Resetting the state to NOT_STARTED or another appropriate state
-        }
-
-        proximityVibrationTriggered = false;  // Allow vibration to trigger again for the next stop
-        currentStop++;                        // Prepare for the next stop or complete the trail
-      }
-    } else if (navigationState == AT_CHECKPOINT) {
-      if (millis() - lastCheckpointTime > 5000) {  // 5 seconds have passed since arriving at the checkpoint
-        navigationState = NAVIGATING;              // Transition back to navigating after the delay
-        proximityVibrationTriggered = false;       // Reset vibration trigger flag
-      }
-    } else if (navigationState == NAVIGATING && currentStop <= numberOfStops) {
-      // Continue with the condition to update navigation info only if there's a significant change in distance
-      if (abs(lastDistance - distance) > 0.5) {
-        Serial.print("Distance to next stop: ");
-        Serial.print(distance, 1);  // One decimal place for distance
-        Serial.print(" meters. Direction to next stop: ");
-        Serial.print(cardinal);
-        Serial.print(" (Target angle: ");
-        Serial.print(targetAngle);
-        Serial.println(" degrees)");
-        lastDistance = distance;  // Update lastDistance for next comparison
-
-        // Here, potentially display the arrow again if needed, based on your logic for selecting and displaying arrows
-        ImageType arrowImage = selectArrowImage(relativeDirection);
-        displayImage(arrowImage);
-
-        // Set the flag to start continuous vibration when within a certain distance from the next stop
-        if (distance <= vibrationTrigger && !proximityVibrationTriggered) {
-          proximityVibrationTriggered = true;
-          lastVibrationTime = millis();  // Ensure we start timing from now
-        }
-      }
-    }
-  }
-}
+// Navigation function (determineTrailStatusAndNavigate) moved to navigation.ino
 
 // Vibration function (triggerProximityVibration) moved to vibration.ino
 
