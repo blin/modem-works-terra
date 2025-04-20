@@ -190,10 +190,12 @@ void fadeIn() {
  *
  * @param display A reference to the Adafruit_GFX compatible display object (e.g., tft).
  * @param format A printf-style format string.
+ * @param stdout A reference to the HardwareSerial object for serial output (e.g., Serial).
+ * @param format A printf-style format string.
  * @param ... Variable arguments for the format string.
- * @return size_t The number of characters printed.
+ * @return size_t The number of characters printed to the display.
  */
-size_t drawText(Adafruit_GFX& display, const char *format, ...) {
+size_t drawText(Adafruit_GFX& display, HardwareSerial& stdout2, const char *format, ...) {
   // Note: Using Adafruit_GFX allows flexibility but assumes methods like fillScreen,
   // setCursor, setTextColor, setTextSize, print are available.
   // Specific color constants like GC9A01A_BLACK might need adjustment if using a different display class.
@@ -208,6 +210,9 @@ size_t drawText(Adafruit_GFX& display, const char *format, ...) {
   vsnprintf(buffer, sizeof(buffer), format, args);
   va_end(args);
 
-  // Use the passed display object to print
+  // Print to the provided serial output
+  stdout2.print(buffer);
+
+  // Use the passed display object to print to the screen
   return display.print(buffer);
 }
