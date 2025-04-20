@@ -77,8 +77,8 @@ const int proximityVibrationDelayMs = 500;   // To determine the time between vi
 void loop() {
   Serial.println("loop start");
 
-  // Feed the global gps object with data from Serial1 for 1000ms
-  feedGPSObject(gps, 1000);
+  // Process the GPS data stream from Serial1, feeding the global gps object for 1000ms
+  processGPSStream(gps, Serial1, 1000);
 
   // Check if the location is known using the global gps object
   if (locationKnown(gps)) {

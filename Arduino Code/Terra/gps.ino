@@ -33,14 +33,21 @@ void updateLocationGlobals(TinyGPSPlus& gps, double& lat, double& lon, bool& rec
   // where location is not known or data wasn't updated.
 }
 
-// Reads data from Serial1 and feeds it to the TinyGPSPlus object for a specified duration.
-static void feedGPSObject(TinyGPSPlus& gps, unsigned long ms) {
+/**
+ * @brief Reads data from a specified HardwareSerial port and feeds it to the TinyGPSPlus object.
+ *        This function will read from the serial port for a given duration (ms).
+ *
+ * @param gps A reference to the TinyGPSPlus object to feed data into.
+ * @param gpsStream A reference to the HardwareSerial port connected to the GPS module (e.g., Serial1).
+ * @param ms The duration in milliseconds to read data from the serial port.
+ */
+static void processGPSStream(TinyGPSPlus& gps, HardwareSerial& gpsStream, unsigned long ms) {
   unsigned long start = millis();
   do {
-    // While data is available from the GPS module connected to Serial1
-    while (Serial1.available()) {
+    // While data is available from the specified GPS serial stream
+    while (gpsStream.available()) {
       // Feed the incoming character to the TinyGPSPlus object for parsing
-      gps.encode(Serial1.read());
+      gps.encode(gpsStream.read());
     }
     // Continue processing until the specified time (ms) has elapsed
   } while (millis() - start < ms);
