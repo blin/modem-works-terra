@@ -187,7 +187,7 @@ void fadeIn() {
 
 size_t drawText(const char *format, ...) {
   tft.fillScreen(GC9A01A_BLACK);
-  tft.setCursor(10, 100);
+  tft.setCursor(0, 100);
   tft.setTextColor(GC9A01A_GREEN);
   tft.setTextSize(2);
 

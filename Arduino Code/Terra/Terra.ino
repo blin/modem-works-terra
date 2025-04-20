@@ -81,11 +81,11 @@ void loop() {
 
   if (locationKnown()) {
     updateLocationGlobals();
-    Serial.printf("You are at (lat=%.1f,lon=%.1f)\n", currentLat, currentLon);
-    drawText("You are at (lat=%.1f,lon=%.1f)\n", currentLat, currentLon);
+    Serial.printf("Location is known\nlat=%.3f\nlon=%.3f\n", currentLat, currentLon);
+    drawText("Location is known\nlat=%.3f\nlon=%.3f\n", currentLat, currentLon);
   } else {
-    Serial.printf("Location unknown sat=%d\nwalk around to find satellites\n", gps.satellites.value());
-    drawText("Location unknown sat=%d\nwalk around to find satellites\n", gps.satellites.value());
+    Serial.printf("Location is unknown\nsat=%d\nwalk around to find satellites\n", gps.satellites.value());
+    drawText("Location is unknown\nsat=%d\nwalk around to find satellites\n", gps.satellites.value());
   }
 
   delay(10000); // Consider reducing or removing this long delay
