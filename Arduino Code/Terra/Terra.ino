@@ -81,13 +81,13 @@ void loop() {
 
   if (locationKnown()) {
     updateLocationGlobals();
-    Serial.printf("lat=%f,lon=%f\n", currentLat, currentLon);
+    Serial.printf("You are at (lat=%f,lon=%f)\n", currentLat, currentLon);
+    drawText("You are at (lat=%f,lon=%f)\n", currentLat, currentLon);
   } else {
-    Serial.printf("gps sat=%d,sentencesWithFix=%d\n", gps.satellites.value(), gps.sentencesWithFix());
+    Serial.printf("Location unknown sat=%d\nwalk around to find satellites\n", gps.satellites.value());
+    drawText("Location unknown sat=%d\nwalk around to find satellites\n", gps.satellites.value());
   }
 
-  // Update the screen with satellite count using the new drawText format
-  drawText("Satellites: %d", gps.satellites.value());
   delay(10000); // Consider reducing or removing this long delay
 
   if (nonBlockingDelay(1000)) {
