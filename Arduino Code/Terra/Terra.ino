@@ -77,25 +77,20 @@ const int proximityVibrationDelayMs = 500;   // To determine the time between vi
 void loop() {
   Serial.println("loop start");
 
-  // Process the GPS data stream from Serial1, feeding the global gps object for 1000ms
   processGPSStream(gps, Serial1, 1000);
+  updateLocationGlobals(gps, currentLat, currentLon, dataReceived);
 
-  // Check if the location is known using the global gps object
-  if (locationKnown(gps)) {
-    // Update location variables by passing them as references (read-write)
-    updateLocationGlobals(gps, currentLat, currentLon, dataReceived);
-    // Pass the tft object and Serial to drawText
-    drawText(tft, Serial, "Location is known\nlat=%.3f\nlon=%.3f\n", currentLat, currentLon);
-  } else {
-    // Location still unknown, report satellite count from the global gps object
-    // Pass the tft object and Serial to drawText
+  if (!locationKnown(gps)) {
     drawText(tft, Serial, "Location is unknown\nsat=%d\nwalk around to find satellites\n", gps.satellites.value());
+    delay(10000);
+    return;
   }
-  delay(10000);
 
+  drawText(tft, Serial, "Location is known\nlat=%.3f\nlon=%.3f\n", currentLat, currentLon);
+  delay(2000);
   int ourAngle = readCompass();
   drawText(tft, Serial, "angle=%d\n", ourAngle);
-  delay(10000);
+  delay(2000);
 
   determineTrailStatusAndNavigate();
 
