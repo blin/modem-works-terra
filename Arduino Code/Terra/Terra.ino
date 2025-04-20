@@ -77,13 +77,17 @@ const int proximityVibrationDelayMs = 500;   // To determine the time between vi
 void loop() {
   Serial.println("loop start");
 
-  feedGPSObject(1000);
+  // Feed the global gps object with data from Serial1 for 1000ms
+  feedGPSObject(gps, 1000);
 
-  if (locationKnown()) {
-    updateLocationGlobals();
+  // Check if the location is known using the global gps object
+  if (locationKnown(gps)) {
+    // Update global location variables using the global gps object
+    updateLocationGlobals(gps);
     Serial.printf("Location is known\nlat=%.3f\nlon=%.3f\n", currentLat, currentLon);
     drawText("Location is known\nlat=%.3f\nlon=%.3f\n", currentLat, currentLon);
   } else {
+    // Location still unknown, report satellite count from the global gps object
     Serial.printf("Location is unknown\nsat=%d\nwalk around to find satellites\n", gps.satellites.value());
     drawText("Location is unknown\nsat=%d\nwalk around to find satellites\n", gps.satellites.value());
   }
