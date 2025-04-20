@@ -1,63 +1,34 @@
 // Latest working code as of March 26 2024.
 
-bool debugMode = false;
-
 // Include Libraries
 #include <TinyGPSPlus.h>
 #include <Wire.h>
 #include <map>
 #include "Adafruit_DRV2605.h"
+#include "Adafruit_GC9A01A.h" // Include TFT library here
 
-// Include Configurations and Images
-#include "config.h"     // Assumes this contains GPS waypoints and number of stops
-#include "imagelist.h"  // Assumes this includes declarations for images
+// Configuration, images, etc., are now in separate .ino files
 
-// Sensor and Display Setup
-#define CMPS12_ADDRESS 0x60
-#define ANGLE_8 1
+// Sensor Variables
+// Compass Variables
 unsigned char high_byte, low_byte, angle8;
 char pitch, roll;
 unsigned int angle16;
-#define BACKLIGHT_PIN 12
 
-// TFT Display Settings
-#include "Adafruit_GC9A01A.h"
-
-#define GC9A01A_DC 33
-#define GC9A01A_CS 15
-#define GC9A01A_BL 12
-
-#define logoWidth  240
-#define logoHeight 240
-
-// NOTE: the images are "inverted", so the whole screen is filled
-// with FG_COLOR, and then the "inverted" image is drawn with BG_COLOR.
-// tft.fillScreen(FG_COLOR);
-// tft.drawXBitmap(x, y, checkpoint_4, logoWidth, logoHeight, BG_COLOR);
-#define BG_COLOR GC9A01A_BLACK
-#define FG_COLOR GC9A01A_WHITE
-#define logoWidth 240
-#define logoHeight 240
-
+// TFT Display Object
+// TFT Display Object
 Adafruit_GC9A01A tft(GC9A01A_CS, GC9A01A_DC);
 
-// The TinyGPSPlus object
-TinyGPSPlus gps;
+// The TinyGPSPlus object moved to gps.ino
 
-// Vibration motor
+// Vibration motor object moved to vibration.ino
 Adafruit_DRV2605 drv;
 int effectNumber = 58;
-bool proximityVibrationTriggered = false;
+// Vibration motor object and state moved to vibration.ino
 
-// Thresholds for triggers in meters
-int checkpointTrigger = 10;  // Distance from the checkpoint that is considered an arrival
-int vibrationTrigger = 20;   // When to trigger vibration to indicate the checkpoint is getting close
+// Thresholds and timing moved to config.ino
 
-unsigned long lastVibrationTime = 0;   // Tracks the last time vibration was triggered
-int proximityVibrationDelayMs = 500;   // To determine the time between vibrations when close to the current stop.
-
-// Image Types Enum
-enum ImageType {
+// Image Types Enum moved to images.ino
   NONE,
   MY_PENDING,
   GOTOSTART,
@@ -114,17 +85,27 @@ void setup();
 void loop();
 void handleGPSData();
 bool readSerialGPS();
-bool readGPS();
-void determineTrailStatusAndNavigate();
-void processGPSData(double lat, double lon);
-bool nonBlockingDelay(unsigned long ms);
-void displayImage(ImageType image);
-void fadeOut();
-void fadeIn();
-double getDistanceTo(double lat, double lon);
-String getCardinalTo(double lat, double lon);
-int getCourseTo(double lat, double lon);
-int readCompass();
+// Function Prototypes (Arduino IDE handles .ino prototypes, but kept for reference)
+// void setup(); // In Terra.ino
+// void loop(); // In Terra.ino
+// void handleGPSData(); // In gps.ino
+// bool readSerialGPS(); // In gps.ino
+// bool readGPS(); // In gps.ino
+// static void smartDelay(unsigned long ms); // In gps.ino
+// void determineTrailStatusAndNavigate(); // In navigation.ino
+// bool nonBlockingDelay(unsigned long ms); // In Terra.ino
+// void displayImage(ImageType image); // In display.ino
+// void drawBitmap(const unsigned char* bitmap); // In display.ino
+// void fadeOut(); // In display.ino
+// void fadeIn(); // In display.ino
+// double getDistanceTo(double lat, double lon); // In navigation.ino
+// String getCardinalTo(double lat, double lon); // In navigation.ino
+// int getCourseTo(double lat, double lon); // In navigation.ino
+// int readCompass(); // In compass.ino
+// void triggerProximityVibration(); // In vibration.ino
+// int calculateRelativeDirection(int currentAngle, int targetAngle); // In navigation.ino
+// ImageType selectArrowImage(int relativeDirection); // In navigation.ino
+
 
 // Setup Function
 void setup() {
@@ -175,66 +156,9 @@ void loop() {
   }
 }
 
-// This custom version of delay() ensures that the gps object is being "fed".
-static void smartDelay(unsigned long ms) {
-  unsigned long start = millis();
-  do {
-    while (Serial1.available())
-      gps.encode(Serial1.read());
-  } while (millis() - start < ms);
-  Serial.printf("gps sat=%d,sentencesWithFix=%d\n", gps.satellites.value(), gps.sentencesWithFix());
-}
+// GPS functions (handleGPSData, readSerialGPS, readGPS, smartDelay) moved to gps.ino
 
-// Handle GPS Data
-void handleGPSData() {
-  if (debugMode) {  // If we're in debug mode, read the serial input
-    if (Serial.available()) {
-      if (readSerialGPS()) {
-        dataReceived = true;  // Once the first data has arrived, we can get into our start routine
-      }
-    }
-  } else {  // If we're not in serial input mode, start handling real GPS data
-    while (Serial1.available()) {
-      if (readGPS()) {
-        dataReceived = true;
-      }
-      // smart delay not only delays, but also processes data from
-      // the GPS device over the serial port...
-      smartDelay(5000);
-    }
-  }
-}
-
-// Read the GPS signal for current lat/lon - this is a serial input for now but can be replaced with code to read the GPS module
-bool readSerialGPS() {
-  String inputString = Serial.readStringUntil('\n');
-  int commaIndex = inputString.indexOf(',');
-
-  // Check if the comma exists and it's not at the end of the string
-  if (commaIndex != -1 && commaIndex < inputString.length() - 1) {
-    currentLat = inputString.substring(0, commaIndex).toDouble();
-    currentLon = inputString.substring(commaIndex + 1).toDouble();
-    return true;  // Data was successfully parsed
-  } else {
-    Serial.println("Invalid format. Please enter in format: lat,lon");
-    return false;  // Data parsing failed
-  }
-}
-
-// Read the GPS module signal for current lat/lon
-bool readGPS() {
-  if (gps.location.isValid()) {
-    currentLat = gps.location.lat();
-    currentLon = gps.location.lng();
-    Serial.printf("lat=%f,lon=%f\n", currentLat, currentLon);
-
-    return true;
-  }
-  Serial.println("GPS location is invalid!");
-
-  return false;
-}
-
+// Navigation function moved to navigation.ino
 void determineTrailStatusAndNavigate() {
   static double lastDistance = -1;
 
@@ -357,143 +281,9 @@ void triggerProximityVibration() {
   } else {
     // Stop vibrating if no longer within 20 meters or not in navigating state
     proximityVibrationTriggered = false;
-  }
-}
+// Display functions (displayImage, drawBitmap, fadeOut, fadeIn) moved to display.ino
 
-// Display image function - fades images out then in again
-void displayImage(ImageType image) {
-  if (currentDisplayedImage != image) {
-    if (screenOn) {
-      fadeOut();
-    }
-    tft.fillScreen(FG_COLOR);
-    switch (image) {
-      case MY_PENDING:
-        drawBitmap(pending);
-        Serial.println("Drawn pending.h");
-        break;
-      case GOTOSTART:
-        drawBitmap(gotostart);
-        Serial.println("Drawn gotostart.h");
-        break;
-      case ARROW_N:
-        drawBitmap(arrow_N);
-        Serial.println("Drawn arrow_N.h");
-        break;
-      case ARROW_NNE:
-        drawBitmap(arrow_NNE);
-        Serial.println("Drawn arrow_NNE.h");
-        break;
-      case ARROW_NE:
-        drawBitmap(arrow_NE);
-        Serial.println("Drawn arrow_NE.h");
-        break;
-      case ARROW_ENE:
-        drawBitmap(arrow_ENE);
-        Serial.println("Drawn arrow_ENE.h");
-        break;
-      case ARROW_E:
-        drawBitmap(arrow_E);
-        Serial.println("Drawn arrow_E.h");
-        break;
-      case ARROW_ESE:
-        drawBitmap(arrow_ESE);
-        Serial.println("Drawn arrow_ESE.h");
-        break;
-      case ARROW_SE:
-        drawBitmap(arrow_SE);
-        Serial.println("Drawn arrow_SE.h");
-        break;
-      case ARROW_SSE:
-        drawBitmap(arrow_SSE);
-        Serial.println("Drawn arrow_SSE.h");
-        break;
-      case ARROW_S:
-        drawBitmap(arrow_S);
-        Serial.println("Drawn arrow_S.h");
-        break;
-      case ARROW_SSW:
-        drawBitmap(arrow_SSW);
-        Serial.println("Drawn arrow_SSW.h");
-        break;
-      case ARROW_SW:
-        drawBitmap(arrow_SW);
-        Serial.println("Drawn arrow_SW.h");
-        break;
-      case ARROW_WSW:
-        drawBitmap(arrow_WSW);
-        Serial.println("Drawn arrow_WSW.h");
-        break;
-      case ARROW_W:
-        drawBitmap(arrow_W);
-        Serial.println("Drawn arrow_W.h");
-        break;
-      case ARROW_WNW:
-        drawBitmap(arrow_WNW);
-        Serial.println("Drawn arrow_WNW.h");
-        break;
-      case ARROW_NW:
-        drawBitmap(arrow_NW);
-        Serial.println("Drawn arrow_NW.h");
-        break;
-      case ARROW_NNW:
-        drawBitmap(arrow_NNW);
-        Serial.println("Drawn arrow_NNW.h");
-        break;
-      case CHECKPOINT_1:
-        drawBitmap(checkpoint_1);
-        Serial.println("Drawn checkpoint_1.h");
-        break;
-      case CHECKPOINT_2:
-        drawBitmap(checkpoint_2);
-        Serial.println("Drawn checkpoint_2.h");
-        break;
-      case CHECKPOINT_3:
-        drawBitmap(checkpoint_3);
-        Serial.println("Drawn checkpoint_3.h");
-        break;
-      case CHECKPOINT_4:
-        drawBitmap(checkpoint_4);
-        Serial.println("Drawn checkpoint_4.h");
-        break;
-      case CHECKPOINT_5:
-        drawBitmap(checkpoint_5);
-        Serial.println("Drawn checkpoint_5.h");
-        break;
-      case CHECKPOINT_6:
-        drawBitmap(checkpoint_6);
-        Serial.println("Drawn checkpoint_6.h");
-        break;
-      case CHECKPOINT_7:
-        drawBitmap(checkpoint_7);
-        Serial.println("Drawn checkpoint_7.h");
-        break;
-      case CHECKPOINT_8:
-        drawBitmap(checkpoint_8);
-        Serial.println("Drawn checkpoint_8.h");
-        break;
-      case CHECKPOINT_9:
-        drawBitmap(checkpoint_9);
-        Serial.println("Drawn checkpoint_9.h");
-        break;
-      case CHECKPOINT_10:
-        drawBitmap(checkpoint_10);
-        Serial.println("Drawn checkpoint_10.h");
-        break;
-      default:
-        tft.fillScreen(FG_COLOR);
-        Serial.println("No image to display");
-    }
-    fadeIn();
-    currentDisplayedImage = image;
-  }
-}
-
-void drawBitmap(const unsigned char* bitmap) {
-  tft.drawXBitmap(0, 0, bitmap, logoWidth, logoHeight, BG_COLOR);
-}
-
-// Example function to calculate relative direction based on angles
+// Navigation functions moved to navigation.ino
 int calculateRelativeDirection(int currentAngle, int targetAngle) {
   int difference = targetAngle - currentAngle;
   if (difference < 0) {
@@ -550,34 +340,9 @@ int getCourseTo(double lat, double lon) {
   return TinyGPSPlus::courseTo(currentLat, currentLon, lat, lon);
 }
 
-// Read the compass sensor and return the compassDirection in cardinal points
-int readCompass() {                        // is string if we're asking for cardinal.
-  Wire.beginTransmission(CMPS12_ADDRESS);  // Starts communication with CMPS12
-  Wire.write(ANGLE_8);                     // Sends the register we wish to start reading from
-  Wire.endTransmission();
+// Compass function (readCompass) moved to compass.ino
 
-  // Request 5 bytes from the CMPS12
-  // this will give us the 8 bit bearing,
-  // both bytes of the 16 bit bearing, pitch and roll
-  Wire.requestFrom(CMPS12_ADDRESS, 5);
-
-  while (Wire.available() < 5)
-    ;  // Wait for all bytes to come back
-
-  angle8 = Wire.read();  // Read back the 5 bytes
-  high_byte = Wire.read();
-  low_byte = Wire.read();
-  pitch = Wire.read();
-  roll = Wire.read();
-
-  angle16 = high_byte;  // Calculate 16 bit angle
-  angle16 <<= 8;
-  angle16 += low_byte;
-
-  int currentAngle = angle16 / 10;
-  return currentAngle;
-}
-
+// Display functions (fadeOut, fadeIn) moved to display.ino
 void fadeOut() {
   for (int i = 255; i >= 0; i -= 5) {
     analogWrite(BACKLIGHT_PIN, i);

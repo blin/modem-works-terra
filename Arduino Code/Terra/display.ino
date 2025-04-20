@@ -1,0 +1,150 @@
+// display.ino - Handles TFT display functions
+
+// Display image function - fades images out then in again
+void displayImage(ImageType image) {
+  if (currentDisplayedImage != image) {
+    if (screenOn) {
+      fadeOut();
+    }
+    tft.fillScreen(FG_COLOR);
+    switch (image) {
+      case MY_PENDING:
+        drawBitmap(pending);
+        Serial.println("Drawn pending.h");
+        break;
+      case GOTOSTART:
+        drawBitmap(gotostart);
+        Serial.println("Drawn gotostart.h");
+        break;
+      case ARROW_N:
+        drawBitmap(arrow_N);
+        Serial.println("Drawn arrow_N.h");
+        break;
+      case ARROW_NNE:
+        drawBitmap(arrow_NNE);
+        Serial.println("Drawn arrow_NNE.h");
+        break;
+      case ARROW_NE:
+        drawBitmap(arrow_NE);
+        Serial.println("Drawn arrow_NE.h");
+        break;
+      case ARROW_ENE:
+        drawBitmap(arrow_ENE);
+        Serial.println("Drawn arrow_ENE.h");
+        break;
+      case ARROW_E:
+        drawBitmap(arrow_E);
+        Serial.println("Drawn arrow_E.h");
+        break;
+      case ARROW_ESE:
+        drawBitmap(arrow_ESE);
+        Serial.println("Drawn arrow_ESE.h");
+        break;
+      case ARROW_SE:
+        drawBitmap(arrow_SE);
+        Serial.println("Drawn arrow_SE.h");
+        break;
+      case ARROW_SSE:
+        drawBitmap(arrow_SSE);
+        Serial.println("Drawn arrow_SSE.h");
+        break;
+      case ARROW_S:
+        drawBitmap(arrow_S);
+        Serial.println("Drawn arrow_S.h");
+        break;
+      case ARROW_SSW:
+        drawBitmap(arrow_SSW);
+        Serial.println("Drawn arrow_SSW.h");
+        break;
+      case ARROW_SW:
+        drawBitmap(arrow_SW);
+        Serial.println("Drawn arrow_SW.h");
+        break;
+      case ARROW_WSW:
+        drawBitmap(arrow_WSW);
+        Serial.println("Drawn arrow_WSW.h");
+        break;
+      case ARROW_W:
+        drawBitmap(arrow_W);
+        Serial.println("Drawn arrow_W.h");
+        break;
+      case ARROW_WNW:
+        drawBitmap(arrow_WNW);
+        Serial.println("Drawn arrow_WNW.h");
+        break;
+      case ARROW_NW:
+        drawBitmap(arrow_NW);
+        Serial.println("Drawn arrow_NW.h");
+        break;
+      case ARROW_NNW:
+        drawBitmap(arrow_NNW);
+        Serial.println("Drawn arrow_NNW.h");
+        break;
+      case CHECKPOINT_1:
+        drawBitmap(checkpoint_1);
+        Serial.println("Drawn checkpoint_1.h");
+        break;
+      case CHECKPOINT_2:
+        drawBitmap(checkpoint_2);
+        Serial.println("Drawn checkpoint_2.h");
+        break;
+      case CHECKPOINT_3:
+        drawBitmap(checkpoint_3);
+        Serial.println("Drawn checkpoint_3.h");
+        break;
+      case CHECKPOINT_4:
+        drawBitmap(checkpoint_4);
+        Serial.println("Drawn checkpoint_4.h");
+        break;
+      case CHECKPOINT_5:
+        drawBitmap(checkpoint_5);
+        Serial.println("Drawn checkpoint_5.h");
+        break;
+      case CHECKPOINT_6:
+        drawBitmap(checkpoint_6);
+        Serial.println("Drawn checkpoint_6.h");
+        break;
+      case CHECKPOINT_7:
+        drawBitmap(checkpoint_7);
+        Serial.println("Drawn checkpoint_7.h");
+        break;
+      case CHECKPOINT_8:
+        drawBitmap(checkpoint_8);
+        Serial.println("Drawn checkpoint_8.h");
+        break;
+      case CHECKPOINT_9:
+        drawBitmap(checkpoint_9);
+        Serial.println("Drawn checkpoint_9.h");
+        break;
+      case CHECKPOINT_10:
+        drawBitmap(checkpoint_10);
+        Serial.println("Drawn checkpoint_10.h");
+        break;
+      default:
+        tft.fillScreen(FG_COLOR);
+        Serial.println("No image to display");
+    }
+    fadeIn();
+    currentDisplayedImage = image;
+  }
+}
+
+void drawBitmap(const unsigned char* bitmap) {
+  tft.drawXBitmap(0, 0, bitmap, logoWidth, logoHeight, BG_COLOR);
+}
+
+void fadeOut() {
+  for (int i = 255; i >= 0; i -= 5) {
+    analogWrite(BACKLIGHT_PIN, i);
+    delay(10);
+  }
+  screenOn = false;
+}
+
+void fadeIn() {
+  for (int i = 0; i <= 255; i += 5) {
+    analogWrite(BACKLIGHT_PIN, i);
+    delay(10);
+  }
+  screenOn = true;
+}
