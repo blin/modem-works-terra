@@ -81,8 +81,8 @@ void loop() {
 
   if (locationKnown()) {
     updateLocationGlobals();
-    Serial.printf("You are at (lat=%f,lon=%f)\n", currentLat, currentLon);
-    drawText("You are at (lat=%f,lon=%f)\n", currentLat, currentLon);
+    Serial.printf("You are at (lat=%.1f,lon=%.1f)\n", currentLat, currentLon);
+    drawText("You are at (lat=%.1f,lon=%.1f)\n", currentLat, currentLon);
   } else {
     Serial.printf("Location unknown sat=%d\nwalk around to find satellites\n", gps.satellites.value());
     drawText("Location unknown sat=%d\nwalk around to find satellites\n", gps.satellites.value());
