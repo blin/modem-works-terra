@@ -185,17 +185,29 @@ void fadeIn() {
   screenOn = true;
 }
 
-size_t drawText(const char *format, ...) {
-  tft.fillScreen(GC9A01A_BLACK);
-  tft.setCursor(0, 100);
-  tft.setTextColor(GC9A01A_GREEN);
-  tft.setTextSize(2);
+/**
+ * @brief Draws formatted text onto the specified display object.
+ *
+ * @param display A reference to the Adafruit_GFX compatible display object (e.g., tft).
+ * @param format A printf-style format string.
+ * @param ... Variable arguments for the format string.
+ * @return size_t The number of characters printed.
+ */
+size_t drawText(Adafruit_GFX& display, const char *format, ...) {
+  // Note: Using Adafruit_GFX allows flexibility but assumes methods like fillScreen,
+  // setCursor, setTextColor, setTextSize, print are available.
+  // Specific color constants like GC9A01A_BLACK might need adjustment if using a different display class.
+  display.fillScreen(GC9A01A_BLACK); // Assuming BLACK is a common color define or use a generic one if available
+  display.setCursor(0, 100);
+  display.setTextColor(GC9A01A_GREEN); // Assuming GREEN is common or use a generic one
+  display.setTextSize(2);
 
   va_list args;
   va_start(args, format);
-  char buffer[64]; // Adjust size as needed
+  char buffer[64]; // Adjust size as needed, consider making it larger for safety
   vsnprintf(buffer, sizeof(buffer), format, args);
   va_end(args);
 
-  return tft.print(buffer);
+  // Use the passed display object to print
+  return display.print(buffer);
 }

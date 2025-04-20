@@ -85,11 +85,13 @@ void loop() {
     // Update location variables by passing them as references (read-write)
     updateLocationGlobals(gps, currentLat, currentLon, dataReceived);
     Serial.printf("Location is known\nlat=%.3f\nlon=%.3f\n", currentLat, currentLon);
-    drawText("Location is known\nlat=%.3f\nlon=%.3f\n", currentLat, currentLon);
+    // Pass the tft object to drawText
+    drawText(tft, "Location is known\nlat=%.3f\nlon=%.3f\n", currentLat, currentLon);
   } else {
     // Location still unknown, report satellite count from the global gps object
     Serial.printf("Location is unknown\nsat=%d\nwalk around to find satellites\n", gps.satellites.value());
-    drawText("Location is unknown\nsat=%d\nwalk around to find satellites\n", gps.satellites.value());
+    // Pass the tft object to drawText
+    drawText(tft, "Location is unknown\nsat=%d\nwalk around to find satellites\n", gps.satellites.value());
   }
 
   delay(10000); // Consider reducing or removing this long delay
