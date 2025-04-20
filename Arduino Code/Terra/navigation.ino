@@ -1,16 +1,7 @@
 // navigation.ino - Core navigation logic and state management
 
-// Navigation State Enum
-enum NavigationState {
-  NOT_STARTED,
-  NAVIGATING,
-  AT_CHECKPOINT,
-  TRAIL_ENDED
-};
-
-// Initialize your navigation state
-NavigationState navigationState = NOT_STARTED;  // Initial navigation state
-unsigned long lastCheckpointTime = 0;           // Timestamp of when the last checkpoint was reached
+// Navigation State Enum moved to Terra.ino
+// Navigation state variables moved to Terra.ino
 
 // Main navigation logic function
 void determineTrailStatusAndNavigate() {

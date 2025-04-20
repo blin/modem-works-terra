@@ -1,7 +1,6 @@
 // gps.ino - Handles GPS communication and data parsing
 
-// The TinyGPSPlus object
-TinyGPSPlus gps;
+// The TinyGPSPlus object declaration moved to Terra.ino
 
 // Handle GPS Data
 void handleGPSData() {

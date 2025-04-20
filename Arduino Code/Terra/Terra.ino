@@ -7,69 +7,81 @@
 #include "Adafruit_DRV2605.h"
 #include "Adafruit_GC9A01A.h" // Include TFT library here
 
-// Configuration, images, etc., are now in separate .ino files
+// --- Moved from config.ino ---
+const bool debugMode = false;
+// Compass Sensor Setup
+#define CMPS12_ADDRESS 0x60
+#define ANGLE_8 1
+// TFT Display Settings
+#define GC9A01A_DC 33
+#define GC9A01A_CS 15
+#define GC9A01A_BL 12 // Same as BACKLIGHT_PIN
+#define logoWidth  240
+#define logoHeight 240
+#define BG_COLOR GC9A01A_BLACK
+#define FG_COLOR GC9A01A_WHITE
+// Backlight Pin (Redundant with GC9A01A_BL but kept for clarity if used elsewhere)
+#define BACKLIGHT_PIN 12
+// GPS Waypoints and Trail Settings
+const double startLat = 51.536286769987;
+const double startLon = -0.12449799356353357;
+const double stopLats[] = { 51.536862, 51.537587, 51.53831, 51.538896, 51.539512, 51.540152, 51.540788, 51.541382, 51.541977, 51.542588, 51.536286769987 };
+const double stopLons[] = { -0.125599, -0.126087, -0.126477, -0.126926, -0.127397, -0.127758, -0.128196, -0.128654, -0.129082, -0.129531, -0.12449799356353357 };
+const int numberOfStops = 11;
+// Thresholds for triggers in meters
+const int checkpointTrigger = 10;  // Distance from the checkpoint that is considered an arrival
+const int vibrationTrigger = 20;   // When to trigger vibration to indicate the checkpoint is getting close
+// Vibration timing
+const int proximityVibrationDelayMs = 500;   // To determine the time between vibrations when close to the current stop.
+// --- End Moved from config.ino ---
 
-// Sensor Variables
-// Compass Variables
-unsigned char high_byte, low_byte, angle8;
-char pitch, roll;
-unsigned int angle16;
+// --- Moved from images.ino ---
+// Image Types Enum
+enum ImageType {
+  NONE, MY_PENDING, GOTOSTART,
+  ARROW_N, ARROW_NNE, ARROW_NE, ARROW_ENE, ARROW_E, ARROW_ESE, ARROW_SE, ARROW_SSE,
+  ARROW_S, ARROW_SSW, ARROW_SW, ARROW_WSW, ARROW_W, ARROW_WNW, ARROW_NW, ARROW_NNW,
+  CHECKPOINT_1, CHECKPOINT_2, CHECKPOINT_3, CHECKPOINT_4, CHECKPOINT_5,
+  CHECKPOINT_6, CHECKPOINT_7, CHECKPOINT_8, CHECKPOINT_9, CHECKPOINT_10
+};
+ImageType currentDisplayedImage = NONE; // Tracks the currently displayed image
+// --- End Moved from images.ino ---
 
-// TFT Display Object
+// --- Moved from navigation.ino ---
+// Navigation State Enum
+enum NavigationState {
+  NOT_STARTED, NAVIGATING, AT_CHECKPOINT, TRAIL_ENDED
+};
+NavigationState navigationState = NOT_STARTED;  // Initial navigation state
+unsigned long lastCheckpointTime = 0;           // Timestamp of when the last checkpoint was reached
+// --- End Moved from navigation.ino ---
+
+// --- Moved from vibration.ino ---
+// Vibration settings and state
+int effectNumber = 58; // Default vibration effect
+bool proximityVibrationTriggered = false; // Flag if vibration is active due to proximity
+unsigned long lastVibrationTime = 0;   // Tracks the last time vibration was triggered for continuous pulsing
+// --- End Moved from vibration.ino ---
+
+
 // TFT Display Object
 Adafruit_GC9A01A tft(GC9A01A_CS, GC9A01A_DC);
 
-// The TinyGPSPlus object moved to gps.ino
+// GPS Object (Declaration moved from gps.ino)
+TinyGPSPlus gps;
 
-// Vibration motor object and variables moved to vibration.ino
+// Vibration motor object
 Adafruit_DRV2605 drv;
-// int effectNumber = 58; // Moved to vibration.ino
-// Vibration motor object and state moved to vibration.ino
 
-// Thresholds and timing moved to config.ino
-
-// Image Types Enum moved to images.ino
-// enum definition removed as it's now in images.ino
-
-// Navigation State Enum and variables moved to navigation.ino
-// enum NavigationState { ... }; // Moved
-// NavigationState navigationState = NOT_STARTED; // Moved
-// unsigned long lastCheckpointTime = 0; // Moved
-
-// Global Variables for GPS Data and State
+// Global Variables for GPS Data and State (Remaining)
 int currentStop = 0; // Tracks the current target checkpoint index (1-based)
 double currentLat, currentLon;
 bool trailStarted = false;
 bool dataReceived = false;
-bool screenOn = false;
-double distance;  // Distance to the next checkpoint
+bool screenOn = false; // Used by display fade functions
+double distance;  // Distance to the next checkpoint, updated in navigation
 
-// Function Prototypes
-void setup();
-void loop();
-void handleGPSData();
-bool readSerialGPS();
-// Function Prototypes (Arduino IDE handles .ino prototypes, but kept for reference)
-// void setup(); // In Terra.ino
-// void loop(); // In Terra.ino
-// void handleGPSData(); // In gps.ino
-// bool readSerialGPS(); // In gps.ino
-// bool readGPS(); // In gps.ino
-// static void smartDelay(unsigned long ms); // In gps.ino
-// void determineTrailStatusAndNavigate(); // In navigation.ino
-// bool nonBlockingDelay(unsigned long ms); // In Terra.ino
-// void displayImage(ImageType image); // In display.ino
-// void drawBitmap(const unsigned char* bitmap); // In display.ino
-// void fadeOut(); // In display.ino
-// void fadeIn(); // In display.ino
-// double getDistanceTo(double lat, double lon); // In navigation.ino
-// String getCardinalTo(double lat, double lon); // In navigation.ino
-// int getCourseTo(double lat, double lon); // In navigation.ino
-// int readCompass(); // In compass.ino
-// void triggerProximityVibration(); // In vibration.ino
-// int calculateRelativeDirection(int currentAngle, int targetAngle); // In navigation.ino
-// ImageType selectArrowImage(int relativeDirection); // In navigation.ino
-
+// NOTE: Function Prototypes section removed - Arduino IDE handles .ino file prototypes.
 
 // Setup Function
 void setup() {
@@ -146,18 +158,4 @@ bool nonBlockingDelay(unsigned long ms) {
 // Compass function (readCompass) moved to compass.ino
 
 // Display functions (fadeOut, fadeIn) moved to display.ino
-void fadeOut() {
-  for (int i = 255; i >= 0; i -= 5) {
-    analogWrite(BACKLIGHT_PIN, i);
-    delay(10);
-  }
-  screenOn = false;
-}
-
-void fadeIn() {
-  for (int i = 0; i <= 255; i += 5) {
-    analogWrite(BACKLIGHT_PIN, i);
-    delay(10);
-  }
-  screenOn = true;
-}
+// Definitions removed from here.

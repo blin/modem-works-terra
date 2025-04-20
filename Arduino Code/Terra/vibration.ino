@@ -1,12 +1,7 @@
 // vibration.ino - Handles the DRV2605 vibration motor
 
-// Vibration motor object
-Adafruit_DRV2605 drv;
-
-// Vibration settings and state
-int effectNumber = 58; // Default vibration effect
-bool proximityVibrationTriggered = false; // Flag if vibration is active due to proximity
-unsigned long lastVibrationTime = 0;   // Tracks the last time vibration was triggered for continuous pulsing
+// Vibration motor object declaration moved to Terra.ino
+// Vibration state variables moved to Terra.ino
 
 // Trigger vibration based on proximity rules
 void triggerProximityVibration() {

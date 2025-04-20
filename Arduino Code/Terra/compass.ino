@@ -1,5 +1,10 @@
 // compass.ino - Handles reading the CMPS12 compass sensor
 
+// Variables used by readCompass
+unsigned char high_byte, low_byte, angle8;
+char pitch, roll;
+unsigned int angle16;
+
 // Read the compass sensor and return the compassDirection in degrees (0-359)
 int readCompass() {
   Wire.beginTransmission(CMPS12_ADDRESS);  // Starts communication with CMPS12
