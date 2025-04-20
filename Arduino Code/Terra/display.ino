@@ -38,7 +38,6 @@ ImageType currentDisplayedImage = NONE; // Tracks the currently displayed image
 
 // Display image function - fades images out then in again
 void displayImage(ImageType image) {
-  if (currentDisplayedImage != image) {
     if (screenOn) {
       fadeOut();
     }
@@ -162,7 +161,6 @@ void displayImage(ImageType image) {
     }
     fadeIn();
     currentDisplayedImage = image;
-  }
 }
 
 void drawBitmap(const unsigned char* bitmap) {

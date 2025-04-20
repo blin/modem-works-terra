@@ -33,6 +33,7 @@ Adafruit_DRV2605 drv;
 // Global Variables for GPS Data and State (Remaining)
 int currentStop = 0; // Tracks the current target checkpoint index (1-based)
 double currentLat, currentLon;
+double targetLat, targetLon;
 bool trailStarted = false;
 bool dataReceived = false;
 bool screenOn = false; // Used by display fade functions
@@ -69,6 +70,8 @@ void setup() {
   Wire.begin();
 
   displayImage(GOTOSTART);
+
+  proximityVibrationTriggered = true;
 }
 
 const int proximityVibrationDelayMs = 500;   // To determine the time between vibrations when close to the current stop.
@@ -76,6 +79,7 @@ const int proximityVibrationDelayMs = 500;   // To determine the time between vi
 // Main Loop
 void loop() {
   Serial.println("loop start");
+  triggerProximityVibration();
 
   processGPSStream(gps, Serial1, 1000);
   updateLocationGlobals(gps, currentLat, currentLon, dataReceived);
@@ -86,18 +90,19 @@ void loop() {
     return;
   }
 
-  drawText(tft, Serial, "Location is known\nlat=%.3f\nlon=%.3f\n", currentLat, currentLon);
-  delay(2000);
-  int ourAngle = readCompass();
-  drawText(tft, Serial, "angle=%d\n", ourAngle);
-  delay(2000);
 
-  determineTrailStatusAndNavigate();
-
-
-  // Continuously trigger vibration when within a certain distance of the next stop
-  if (proximityVibrationTriggered && millis() - lastVibrationTime >= proximityVibrationDelayMs) {
-    triggerProximityVibration();
-    lastVibrationTime = millis();  // Update the last vibration time
+  switch (navigationState) {
+    case NOT_STARTED:
+      handleNotStartedState();
+      navigationState = NAVIGATING;
+      break;
+    case NAVIGATING:
+      handleNavigatingState();
+      break;
+    default:
+      // Should not happen
+      Serial.println("Error: Unknown navigation state!");
+      break;
   }
+  triggerProximityVibration();
 }
