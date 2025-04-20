@@ -21,46 +21,17 @@ Adafruit_GC9A01A tft(GC9A01A_CS, GC9A01A_DC);
 
 // The TinyGPSPlus object moved to gps.ino
 
-// Vibration motor object moved to vibration.ino
+// Vibration motor object and variables moved to vibration.ino
 Adafruit_DRV2605 drv;
-int effectNumber = 58;
+// int effectNumber = 58; // Moved to vibration.ino
 // Vibration motor object and state moved to vibration.ino
 
 // Thresholds and timing moved to config.ino
 
 // Image Types Enum moved to images.ino
-  NONE,
-  MY_PENDING,
-  GOTOSTART,
-  ARROW_N,
-  ARROW_NNE,
-  ARROW_NE,
-  ARROW_ENE,
-  ARROW_E,
-  ARROW_ESE,
-  ARROW_SE,
-  ARROW_SSE,
-  ARROW_S,
-  ARROW_SSW,
-  ARROW_SW,
-  ARROW_WSW,
-  ARROW_W,
-  ARROW_WNW,
-  ARROW_NW,
-  ARROW_NNW,
-  CHECKPOINT_1,
-  CHECKPOINT_2,
-  CHECKPOINT_3,
-  CHECKPOINT_4,
-  CHECKPOINT_5,
-  CHECKPOINT_6,
-  CHECKPOINT_7,
-  CHECKPOINT_8,
-  CHECKPOINT_9,
-  CHECKPOINT_10
-};
-ImageType currentDisplayedImage = NONE;
+// enum definition removed as it's now in images.ino
 
+// Navigation State Enum moved to navigation.ino
 enum NavigationState {
   NOT_STARTED,
   NAVIGATING,
@@ -268,53 +239,13 @@ void determineTrailStatusAndNavigate() {
   }
 }
 
-void triggerProximityVibration() {
-  // Check if we should still be vibrating (if within a certain distance and navigating)
-  if (distance <= proximityVibrationTriggered && navigationState == NAVIGATING) {
-    // set the effect to play
-    drv.setWaveform(0, effectNumber);  // play effect
-    drv.setWaveform(1, 0);             // end waveform
-    // play the effect!
-    drv.go();
-    // Serial.println("Vibration triggered");
-    // Note: We do not set vibrationTriggered to false here as we want continuous vibration
-  } else {
-    // Stop vibrating if no longer within 20 meters or not in navigating state
-    proximityVibrationTriggered = false;
+// Vibration function (triggerProximityVibration) moved to vibration.ino
+
 // Display functions (displayImage, drawBitmap, fadeOut, fadeIn) moved to display.ino
 
-// Navigation functions moved to navigation.ino
-int calculateRelativeDirection(int currentAngle, int targetAngle) {
-  int difference = targetAngle - currentAngle;
-  if (difference < 0) {
-    difference += 360;  // Adjust for negative differences
-  }
-  return difference % 360;  // Ensure the result is within 0-359 degreess
-}
+// Navigation helper functions (calculateRelativeDirection, selectArrowImage) moved to navigation.ino
 
-
-// Select an arrow image based on relative direction
-ImageType selectArrowImage(int relativeDirection) {
-  if (relativeDirection >= 348.75 || relativeDirection < 11.25) return ARROW_N;
-  else if (relativeDirection >= 11.25 && relativeDirection < 33.75) return ARROW_NNE;
-  else if (relativeDirection >= 33.75 && relativeDirection < 56.25) return ARROW_NE;
-  else if (relativeDirection >= 56.25 && relativeDirection < 78.75) return ARROW_ENE;
-  else if (relativeDirection >= 78.75 && relativeDirection < 101.25) return ARROW_E;
-  else if (relativeDirection >= 101.25 && relativeDirection < 123.75) return ARROW_ESE;
-  else if (relativeDirection >= 123.75 && relativeDirection < 146.25) return ARROW_SE;
-  else if (relativeDirection >= 146.25 && relativeDirection < 168.75) return ARROW_SSE;
-  else if (relativeDirection >= 168.75 && relativeDirection < 191.25) return ARROW_S;
-  else if (relativeDirection >= 191.25 && relativeDirection < 213.75) return ARROW_SSW;
-  else if (relativeDirection >= 213.75 && relativeDirection < 236.25) return ARROW_SW;
-  else if (relativeDirection >= 236.25 && relativeDirection < 258.75) return ARROW_WSW;
-  else if (relativeDirection >= 258.75 && relativeDirection < 281.25) return ARROW_W;
-  else if (relativeDirection >= 281.25 && relativeDirection < 303.75) return ARROW_WNW;
-  else if (relativeDirection >= 303.75 && relativeDirection < 326.25) return ARROW_NW;
-  else if (relativeDirection >= 326.25 && relativeDirection < 348.75) return ARROW_NNW;
-  else return ARROW_N;  // Default case, although logically unnecessary due to the first condition
-}
-
-// Non blocking delay to read sensors
+// Non blocking delay to read sensors (remains in Terra.ino)
 bool nonBlockingDelay(unsigned long ms) {
   static unsigned long lastCheck = 0;
   unsigned long currentMillis = millis();
@@ -325,20 +256,7 @@ bool nonBlockingDelay(unsigned long ms) {
   return false;
 }
 
-// Simple function to get distance to lat/lon, is used to determine whether GPS module is in range of a stop
-double getDistanceTo(double lat, double lon) {
-  return TinyGPSPlus::distanceBetween(currentLat, currentLon, lat, lon);
-}
-
-String getCardinalTo(double lat, double lon) {
-  double courseTo = TinyGPSPlus::courseTo(currentLat, currentLon, lat, lon);
-  String cardinal = TinyGPSPlus::cardinal(courseTo);
-  return cardinal;
-}
-
-int getCourseTo(double lat, double lon) {
-  return TinyGPSPlus::courseTo(currentLat, currentLon, lat, lon);
-}
+// Navigation helper functions (getDistanceTo, getCardinalTo, getCourseTo) moved to navigation.ino
 
 // Compass function (readCompass) moved to compass.ino
 
