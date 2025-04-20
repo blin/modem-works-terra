@@ -43,12 +43,10 @@ void setup() {
   // Initialize Serial (UART0) for debugging output via USB
   Serial.begin(115200);
 
-  if (!debugMode) {
-    // Initialize Serial1 (UART1) for communication with the GPS module (BN800)
-    // Uses different pins than Serial (UART0). Check ESP32 board pinout.
-    // 9600 is the default baud rate for the BN800 GPS
-    Serial1.begin(9600);
-  }
+  // Initialize Serial1 (UART1) for communication with the GPS module (BN800)
+  // Uses different pins than Serial (UART0). Check ESP32 board pinout.
+  // 9600 is the default baud rate for the BN800 GPS
+  Serial1.begin(9600);
 
   // Screen
   tft.begin();
@@ -69,6 +67,8 @@ void setup() {
   drv.setMode(DRV2605_MODE_INTTRIG);
 
   Wire.begin();
+
+  displayImage(GOTOSTART);
 }
 
 const int proximityVibrationDelayMs = 500;   // To determine the time between vibrations when close to the current stop.
@@ -82,9 +82,7 @@ void loop() {
     handleGPSData();
     determineTrailStatusAndNavigate();
   }
-  if (!debugMode) {
-    smartDelay(1000);  // for reading the GPS module
-  }
+
   // Continuously trigger vibration when within a certain distance of the next stop
   if (proximityVibrationTriggered && millis() - lastVibrationTime >= proximityVibrationDelayMs) {
     triggerProximityVibration();

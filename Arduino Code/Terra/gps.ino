@@ -4,21 +4,13 @@
 
 // Handle GPS Data
 void handleGPSData() {
-  if (debugMode) {  // If we're in debug mode, read the serial input
-    if (Serial.available()) {
-      if (readSerialGPS()) {
-        dataReceived = true;  // Once the first data has arrived, we can get into our start routine
-      }
+  while (Serial1.available()) {
+    if (readGPS()) {
+      dataReceived = true;
     }
-  } else {  // If we're not in serial input mode, start handling real GPS data
-    while (Serial1.available()) {
-      if (readGPS()) {
-        dataReceived = true;
-      }
-      // smart delay not only delays, but also processes data from
-      // the GPS device over the serial port...
-      smartDelay(5000);
-    }
+    // smart delay not only delays, but also processes data from
+    // the GPS device over the serial port...
+    smartDelay(5000);
   }
 }
 
