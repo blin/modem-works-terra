@@ -90,24 +90,13 @@ void loop() {
 
   delay(10000); // Consider reducing or removing this long delay
 
-  if (nonBlockingDelay(1000)) {
-    determineTrailStatusAndNavigate();
-  }
+
+  determineTrailStatusAndNavigate();
+
 
   // Continuously trigger vibration when within a certain distance of the next stop
   if (proximityVibrationTriggered && millis() - lastVibrationTime >= proximityVibrationDelayMs) {
     triggerProximityVibration();
     lastVibrationTime = millis();  // Update the last vibration time
   }
-}
-
-// Non blocking delay to read sensors (remains in Terra.ino)
-bool nonBlockingDelay(unsigned long ms) {
-  static unsigned long lastCheck = 0;
-  unsigned long currentMillis = millis();
-  if (currentMillis - lastCheck >= ms) {
-    lastCheck = currentMillis;
-    return true;
-  }
-  return false;
 }
