@@ -77,9 +77,21 @@ const int proximityVibrationDelayMs = 500;   // To determine the time between vi
 void loop() {
   Serial.println("loop start");
 
-  delay(1000);
+  feedGPSObject(1000);
+
+  if (locationKnown()) {
+    updateLocationGlobals();
+    Serial.printf("lat=%f,lon=%f\n", currentLat, currentLon);
+  } else {
+    Serial.printf("gps sat=%d,sentencesWithFix=%d\n", gps.satellites.value(), gps.sentencesWithFix());
+  }
+
+  char loc_buf[64];
+  char *temp = loc_buf;
+  sprintf(temp, "data from %d satellites", gps.satellites.value());
+  drawText(temp);
+  delay(10000);
   if (nonBlockingDelay(1000)) {
-    handleGPSData();
     determineTrailStatusAndNavigate();
   }
 
