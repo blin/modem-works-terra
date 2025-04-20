@@ -93,9 +93,12 @@ void loop() {
     // Pass the tft object to drawText
     drawText(tft, "Location is unknown\nsat=%d\nwalk around to find satellites\n", gps.satellites.value());
   }
+  delay(10000);
 
-  delay(10000); // Consider reducing or removing this long delay
-
+  int ourAngle = readCompass();
+  Serial.printf("angle=%d\n", ourAngle);
+  drawText(tft, "angle=%d\n", ourAngle);
+  delay(10000);
 
   determineTrailStatusAndNavigate();
 
